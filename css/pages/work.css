@@ -59,12 +59,124 @@
 }
 
 /* ══════════════════════════════════════════════════════════
-   BENTO GRID — VK Events Gallery
-   4 tile sizes: normal (1×1), tall (1×2), wide (2×1), hero (2×2)
-   Mobile-first, dense packing, rounded premium tiles
+   MASONRY GALLERY — VK Events
+   True proportional masonry: images render at their natural
+   aspect ratio with no cropping. Column-based layout.
 ══════════════════════════════════════════════════════════ */
 
-/* ── Base Grid ─────────────────────────────────────────── */
+/* ── Masonry Wrapper ───────────────────────────────────── */
+.masonry-grid {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+@media (min-width: 600px) {
+    .masonry-grid { gap: 12px; }
+}
+
+@media (min-width: 768px) {
+    .masonry-grid { gap: 14px; }
+}
+
+@media (min-width: 1100px) {
+    .masonry-grid { gap: 16px; }
+}
+
+/* ── Masonry Column ────────────────────────────────────── */
+.masonry-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+@media (min-width: 600px) {
+    .masonry-col { gap: 12px; }
+}
+
+@media (min-width: 768px) {
+    .masonry-col { gap: 14px; }
+}
+
+@media (min-width: 1100px) {
+    .masonry-col { gap: 16px; }
+}
+
+/* ── Masonry Item ──────────────────────────────────────── */
+.masonry-item {
+    position: relative;
+    width: 100%;
+    overflow: visible; /* allow shadow to bleed */
+    border-radius: 16px;
+    animation: masonryFadeIn 0.45s ease both;
+}
+
+@keyframes masonryFadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Aspect-ratio spacer container */
+.masonry-item__ratio {
+    position: relative;
+    width: 100%;
+    height: 0;       /* height driven entirely by padding-top */
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--color-card);
+    border: 1px solid rgba(182, 138, 58, 0.18);
+    box-shadow: 0 2px 12px rgba(90, 31, 43, 0.06);
+    transition:
+        box-shadow 0.35s ease,
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.masonry-item:hover .masonry-item__ratio {
+    transform: translateY(-4px) scale(1.012);
+    box-shadow:
+        0 12px 40px rgba(90, 31, 43, 0.14),
+        0 0 0 1px rgba(182, 138, 58, 0.28);
+}
+
+.masonry-item__ratio img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;   /* fills ratio box perfectly */
+    object-position: center;
+    display: block;
+    border-radius: inherit;
+    transition: transform 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.masonry-item:hover .masonry-item__ratio img {
+    transform: scale(1.05);
+}
+
+/* Loading state */
+.masonry-loading {
+    width: 100%;
+    text-align: center;
+    padding: 60px 0;
+}
+
+/* Protected / static items in delete mode */
+.masonry-item.is-protected { opacity: 0.65; cursor: not-allowed; }
+
+/* Mobile radius tweak */
+@media (max-width: 599px) {
+    .masonry-item__ratio { border-radius: 12px; }
+    .masonry-item        { border-radius: 12px; }
+    .gallery-section .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* ── Keep legacy .gallery-grid for any other pages ─────── */
 .gallery-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -73,120 +185,6 @@
     grid-auto-flow: dense;
 }
 
-@media (min-width: 600px) {
-    .gallery-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        grid-auto-rows: 200px;
-        gap: 12px;
-    }
-}
-
-@media (min-width: 768px) {
-    .gallery-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        grid-auto-rows: 220px;
-        gap: 14px;
-    }
-}
-
-@media (min-width: 1100px) {
-    .gallery-grid {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        grid-auto-rows: 240px;
-        gap: 16px;
-    }
-}
-
-/* ── Gallery Item Base ─────────────────────────────────── */
-.gallery-item {
-    position: relative;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    background-color: var(--color-card);
-    cursor: pointer;
-    border-radius: 16px;
-    border: 1px solid rgba(182, 138, 58, 0.18);
-    box-shadow: 0 2px 12px rgba(90, 31, 43, 0.06);
-    transition:
-        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-        box-shadow 0.35s ease;
-    will-change: transform;
-}
-
-.gallery-item:hover {
-    transform: translateY(-4px) scale(1.012);
-    box-shadow:
-        0 12px 40px rgba(90, 31, 43, 0.14),
-        0 0 0 1px rgba(182, 138, 58, 0.28);
-}
-
-.gallery-item img,
-.gallery-item video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-    transition: transform 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    border-radius: inherit;
-}
-
-.gallery-item:hover img,
-.gallery-item:hover video {
-    transform: scale(1.07);
-}
-
-/* ── Bento Span Variants ───────────────────────────────── */
-
-/* Normal  — 1 col × 1 row */
-.gallery-item,
-.gallery-item--normal {
-    grid-column: span 1;
-    grid-row: span 1;
-}
-
-/* Tall    — 1 col × 2 rows  (portrait / vertical shots) */
-.gallery-item--tall {
-    grid-column: span 1;
-    grid-row: span 2;
-}
-
-/* Wide    — 2 cols × 1 row  (landscape / panoramic shots) */
-.gallery-item--wide {
-    grid-column: span 2;
-    grid-row: span 1;
-}
-
-/* Hero    — 2 cols × 2 rows (featured / signature shots) */
-.gallery-item--hero,
-.gallery-item--large,
-.gallery-item.is-featured {
-    grid-column: span 2;
-    grid-row: span 2;
-}
-
-/* ── Mobile Overrides (<600px): 2-col grid, simplify spans ─ */
-@media (max-width: 599px) {
-    /* tall and wide stay as-is on 2-col; hero stays 2×2 full width */
-    .gallery-item--wide {
-        grid-column: span 2;
-        grid-row: span 1;
-    }
-    .gallery-item--hero,
-    .gallery-item--large,
-    .gallery-item.is-featured {
-        grid-column: span 2;
-        grid-row: span 2;
-    }
-    /* tighten radius slightly on phones */
-    .gallery-item { border-radius: 12px; }
-
-    .gallery-section .container {
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-}
 
 /* ── Gallery Empty State ───────────────────────────── */
 .gallery-empty-state {
@@ -257,6 +255,13 @@
     box-shadow: 0 6px 18px rgba(90, 31, 43, 0.3);
 }
 
+/* ── Gallery Item Base (shared across masonry & legacy grid) ─ */
+.gallery-item {
+    position: relative;
+    cursor: pointer;
+    background-color: var(--color-card);
+}
+
 /* ── Bento Tile Overlay — glassmorphism pill label ──────── */
 .gallery-item__overlay {
     position: absolute;
@@ -269,7 +274,9 @@
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 2;
 }
+.masonry-item:hover .gallery-item__overlay,
 .gallery-item:hover .gallery-item__overlay {
     opacity: 1;
     transform: translateY(0);
@@ -312,13 +319,7 @@
     font-size: 11px;
     padding: 5px 14px;
 }
-@media (min-width: 768px) {
-    .gallery-item__overlay {
-        bottom: 16px;
-        left: 16px;
-        right: 16px;
-    }
-}
+
 .gallery-item__icon {
     position: absolute;
     top: var(--space-2);

@@ -9,35 +9,45 @@ import {
   deleteMediaPermanent
 } from '../services/api';
 
-function computeSpanFromRatio(ratio, index = 0) {
-  const pos = index % 12;
+// Responsive column count for masonry layout
+function useColumnCount() {
+  const getCount = () => {
+    if (typeof window === 'undefined') return 2;
+    const w = window.innerWidth;
+    if (w < 640) return 2;
+    if (w < 1024) return 3;
+    return 4;
+  };
 
-  // Positional rhythm anchors
-  if (pos === 0) return 'hero';
-  if (pos === 3) return 'wide';
-  if (pos === 7) return 'tall';
-  if (pos === 11) return 'wide';
+  const [columns, setColumns] = useState(getCount);
 
-  // Ratio-based assignment
-  if (ratio < 0.75) return 'tall'; // portrait
-  if (ratio > 1.45) return 'wide'; // landscape
-  return 'normal';
+  useEffect(() => {
+    const handleResize = () => setColumns(getCount());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return columns;
 }
 
-function getBentoSpanClass(media, index) {
-  if (media.spanType === 'hero') return 'gallery-item--hero';
-  if (media.spanType === 'wide') return 'gallery-item--wide';
-  if (media.spanType === 'tall') return 'gallery-item--tall';
-  if (media.spanType === 'large') return 'gallery-item--hero';
-  if (media.spanType === 'normal') return 'gallery-item--normal';
-
-  if (media.featured || media.isFeatured) return 'gallery-item--hero';
-
-  if (media.aspectRatio) {
-    return `gallery-item--${computeSpanFromRatio(media.aspectRatio, index)}`;
-  }
-
-  return `gallery-item--${computeSpanFromRatio(1.0, index)}`;
+// Distribute items across N columns using shortest-column-first (true masonry)
+function distributeMasonry(items, numCols) {
+  const cols = Array.from({ length: numCols }, () => []);
+  const heights = Array(numCols).fill(0);
+  items.forEach((item, idx) => {
+    // Use stored aspectRatio to estimate column height contribution
+    const ratio = item.aspectRatio || 1;
+    // portrait images are taller — use 1/ratio as height unit
+    const heightUnit = 1 / ratio;
+    // find shortest column
+    let minCol = 0;
+    for (let c = 1; c < numCols; c++) {
+      if (heights[c] < heights[minCol]) minCol = c;
+    }
+    cols[minCol].push({ ...item, _origIndex: idx });
+    heights[minCol] += heightUnit;
+  });
+  return cols;
 }
 
 function getFileAspectRatio(file) {
@@ -221,10 +231,9 @@ export default function Work() {
       const metaList = [];
       for (let i = 0; i < pendingFiles.length; i++) {
         const ratio = await getFileAspectRatio(pendingFiles[i]);
-        const spanType = computeSpanFromRatio(ratio, allMedia.length + i);
         metaList.push({
           aspectRatio: Math.round(ratio * 100) / 100,
-          spanType
+          spanType: 'normal' // masonry layout ignores spanType
         });
       }
 
@@ -248,7 +257,7 @@ export default function Work() {
       setTimeout(() => {
         closeAddModal();
         showToast(
-          `${pendingFiles.length} photo${pendingFiles.length > 1 ? 's' : ''} added to Bento gallery.`
+          `${pendingFiles.length} photo${pendingFiles.length > 1 ? 's' : ''} added to gallery.`
         );
       }, 500);
     } catch (err) {
@@ -257,6 +266,13 @@ export default function Work() {
       alert(`Upload failed: ${err.message || 'Please check your connection and try again.'}`);
     }
   };
+
+  // Masonry column state
+  const numCols = useColumnCount();
+  const masonryCols = useMemo(
+    () => distributeMasonry(filteredMedia, numCols),
+    [filteredMedia, numCols]
+  );
 
   return (
     <main>
@@ -329,16 +345,16 @@ export default function Work() {
             ))}
           </div>
 
-          {/* GALLERY GRID */}
-          <div className="gallery-grid" id="gallery-grid">
+          {/* MASONRY GALLERY */}
+          <div className="masonry-grid" id="gallery-grid">
             {loading ? (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 0' }}>
+              <div className="masonry-loading">
                 <div className="loading-spinner"></div>
                 <p className="text-muted" style={{ marginTop: '16px' }}>Loading gallery…</p>
               </div>
             ) : filteredMedia.length === 0 ? (
               allMedia.length === 0 ? (
-                <div className="gallery-empty-state">
+                <div className="gallery-empty-state" style={{ width: '100%' }}>
                   <div className="gallery-empty-state__box">
                     <div className="gallery-empty-state__icon">🖼️</div>
                     <h3 className="gallery-empty-state__title">Gallery is Currently Empty</h3>
@@ -356,40 +372,49 @@ export default function Work() {
                   </div>
                 </div>
               ) : (
-                <p className="text-muted" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '50px 0' }}>
-                  No photos in "{currentFilter}" yet.
+                <p className="text-muted" style={{ width: '100%', textAlign: 'center', padding: '50px 0' }}>
+                  No photos in &quot;{currentFilter}&quot; yet.
                 </p>
               )
             ) : (
-              filteredMedia.map((media, index) => {
-                const spanClass = getBentoSpanClass(media, index);
-                const isSelected = selectedForDelete.has(media.id);
+              masonryCols.map((col, colIdx) => (
+                <div className="masonry-col" key={colIdx}>
+                  {col.map((media) => {
+                    const isSelected = selectedForDelete.has(media.id);
+                    const ratio = media.aspectRatio || 1;
+                    // padding-top trick: height = width / ratio → (1/ratio)*100%
+                    const paddingTop = `${(1 / ratio) * 100}%`;
 
-                return (
-                  <div
-                    key={media.id || index}
-                    className={`gallery-item ${spanClass} js-observe animate-fade-up is-visible`}
-                    style={{ transitionDelay: `${(index % 4) * 0.08}s` }}
-                    data-id={media.id}
-                    data-static={media.isStatic ? 'true' : undefined}
-                    onClick={() => handleItemClick(media, index)}
-                  >
-                    <img
-                      src={media.src}
-                      alt={media.category || 'Event Decoration'}
-                      loading="lazy"
-                    />
-                    <div className="gallery-item__overlay">
-                      <span className="gallery-item__cat">{media.category}</span>
-                    </div>
-                    {deleteMode && (
-                      <div className={`delete-select-indicator ${isSelected ? 'is-selected' : ''}`}>
-                        <span className="delete-check">✓</span>
+                    return (
+                      <div
+                        key={media.id || media._origIndex}
+                        className={`gallery-item masonry-item${deleteMode && media.isStatic ? ' is-protected' : ''}`}
+                        data-id={media.id}
+                        data-static={media.isStatic ? 'true' : undefined}
+                        style={{ animationDelay: `${(media._origIndex % 6) * 0.06}s` }}
+                        onClick={() => handleItemClick(media, media._origIndex)}
+                      >
+                        {/* Aspect-ratio spacer — keeps the card at natural image proportions */}
+                        <div className="masonry-item__ratio" style={{ paddingTop }}>
+                          <img
+                            src={media.src}
+                            alt={media.category || 'Event Decoration'}
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="gallery-item__overlay">
+                          <span className="gallery-item__cat">{media.category}</span>
+                        </div>
+                        {deleteMode && (
+                          <div className={`delete-select-indicator${isSelected ? ' is-selected' : ''}`}>
+                            <span className="delete-check">✓</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })
+                    );
+                  })}
+                </div>
+              ))
             )}
           </div>
         </div>
