@@ -35,12 +35,13 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded images statically
 app.use('/uploads', express.static(UPLOAD_DIR));
 
-// Serve website static files (dist if built, otherwise root directory)
+// Serve website static files (built Vite bundle in dist)
 const DIST_DIR = path.join(__dirname, 'dist');
 if (fs.existsSync(DIST_DIR)) {
     app.use(express.static(DIST_DIR));
+} else {
+    console.warn('⚠️  WARNING: dist/ folder not found. Run "npm run build" to generate production assets.');
 }
-app.use(express.static(__dirname));
 
 // ── Database Helpers ─────────────────────────────────────────
 function readDb() {
@@ -233,11 +234,22 @@ app.get('*', (req, res, next) => {
     if (path.extname(req.path)) {
         return next();
     }
-    const distIndex = path.join(__dirname, 'dist', 'index.html');
+    const distIndex = path.join(DIST_DIR, 'index.html');
     if (fs.existsSync(distIndex)) {
         return res.sendFile(distIndex);
     }
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Build Missing</title></head>
+        <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+            <h2>⚠️ Production Build Not Found</h2>
+            <p>The <code>dist/</code> folder does not exist on this server.</p>
+            <p>Please configure your Render <strong>Build Command</strong> to:</p>
+            <pre style="background: #f1f1f1; padding: 12px; display: inline-block; border-radius: 6px;">npm install && npm run build</pre>
+        </body>
+        </html>
+    `);
 });
 
 // ── Start Server ─────────────────────────────────────────────
