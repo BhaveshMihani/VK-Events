@@ -9,9 +9,24 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Directory Setup ──────────────────────────────────────────
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
-const DATA_DIR = path.join(__dirname, 'data');
-const DB_FILE = path.join(DATA_DIR, 'gallery-db.json');
+// On Render: use the persistent disk mounted at /opt/render/project/storage
+// Locally: fall back to the project-relative uploads/ and data/ folders
+// Set PERSISTENT_STORAGE_PATH in Render's environment variables if the
+// default mount path ever changes.
+const STORAGE_ROOT = process.env.PERSISTENT_STORAGE_PATH || (
+    // Auto-detect Render's default persistent disk mount path
+    require('fs').existsSync('/opt/render/project/storage')
+        ? '/opt/render/project/storage'
+        : null
+) || path.join(__dirname);
+
+const UPLOAD_DIR = path.join(STORAGE_ROOT, 'uploads');
+const DATA_DIR   = path.join(STORAGE_ROOT, 'data');
+const DB_FILE    = path.join(DATA_DIR, 'gallery-db.json');
+
+console.log(`📁 Storage root : ${STORAGE_ROOT}`);
+console.log(`🖼  Upload dir   : ${UPLOAD_DIR}`);
+console.log(`🗄  Database     : ${DB_FILE}`);
 
 if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
