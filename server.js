@@ -35,7 +35,11 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded images statically
 app.use('/uploads', express.static(UPLOAD_DIR));
 
-// Serve website static files
+// Serve website static files (dist if built, otherwise root directory)
+const DIST_DIR = path.join(__dirname, 'dist');
+if (fs.existsSync(DIST_DIR)) {
+    app.use(express.static(DIST_DIR));
+}
 app.use(express.static(__dirname));
 
 // ── Database Helpers ─────────────────────────────────────────
@@ -224,10 +228,14 @@ app.post('/api/media/delete', (req, res) => {
     }
 });
 
-// Fallback route to index.html for unknown routes if needed
+// Fallback route for SPA client routes
 app.get('*', (req, res, next) => {
     if (path.extname(req.path)) {
         return next();
+    }
+    const distIndex = path.join(__dirname, 'dist', 'index.html');
+    if (fs.existsSync(distIndex)) {
+        return res.sendFile(distIndex);
     }
     res.sendFile(path.join(__dirname, 'index.html'));
 });

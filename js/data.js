@@ -16,7 +16,7 @@ const VKData = {
         'Ring Ceremony',
         'Shop Decoration',
         'Event Entry',
-        'Wedding',
+        // 'Wedding',
         'Other'
     ]
 };
