@@ -136,10 +136,13 @@ window.uploadMediaFiles = async function (files, category, onProgress, metaList 
                             const srcUrl = item.src && item.src.startsWith('http')
                                 ? item.src
                                 : `${API_BASE}${item.src}`;
+                            const fullUrl = item.srcFull && item.srcFull.startsWith('http')
+                                ? item.srcFull
+                                : (item.srcFull ? `${API_BASE}${item.srcFull}` : srcUrl);
                             return {
                                 ...item,
                                 src: srcUrl,
-                                srcFull: srcUrl
+                                srcFull: fullUrl
                             };
                         });
                         resolve(formatted);
