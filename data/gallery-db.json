@@ -5,14 +5,16 @@
     "filename": "124d5f01-f457-4fdc-93a6-b5c0dc-1791199637333-177608.png",
     "originalName": "124d5f01-f457-4fdc-93a6-b5c0dc287f14.png",
     "type": "image",
-    "src": "/uploads/124d5f01-f457-4fdc-93a6-b5c0dc-1791199637333-177608.png",
-    "srcFull": "/uploads/124d5f01-f457-4fdc-93a6-b5c0dc-1791199637333-177608.png",
+    "src": "https://res.cloudinary.com/cfxzrwoh/image/upload/f_auto,q_auto/v1/Dynamic%20folders/124d5f01-f457-4fdc-93a6-b5c0dc-1792140624286?_a=BAMAROUs0",
+    "srcFull": "https://res.cloudinary.com/cfxzrwoh/image/upload/v1792140631/Dynamic%20folders/124d5f01-f457-4fdc-93a6-b5c0dc-1792140624286.jpg",
     "spanType": "normal",
     "aspectRatio": 0.75,
     "size": 353881,
     "mimetype": "image/jpeg",
     "featured": false,
     "isStatic": false,
-    "createdAt": 1791199637453
+    "createdAt": 1791199637453,
+    "cloudinaryPublicId": "Dynamic folders/124d5f01-f457-4fdc-93a6-b5c0dc-1792140624286",
+    "storageType": "cloudinary"
   }
 ]
